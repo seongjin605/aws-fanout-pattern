@@ -1,0 +1,38 @@
+{
+  "name": "localstack",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/seongjin605/JS-Module.git",
+  "author": "preciouStar <seongjin605@users.noreply.github.com>",
+  "license": "MIT",
+  "scripts": {
+    "start": "node fanout.js"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sns": "^3.693.0",
+    "@aws-sdk/client-sqs": "^3.691.0",
+    "@azure/openai": "^1.0.0-beta.5",
+    "@supercharge/promise-pool": "^3.1.0",
+    "@xmldom/xmldom": "^0.8.10",
+    "array-sort": "^1.0.0",
+    "axios": "^0.19.2",
+    "bluebird": "^3.7.2",
+    "camelcase-keys": "^7.0.2",
+    "crypto-js": "^4.1.1",
+    "dompurify": "^2.4.5",
+    "emojilib": "^3.0.10",
+    "gpt-3-encoder": "^1.1.4",
+    "immer": "^8.0.1",
+    "jsdom": "^19.0.0",
+    "node-emoji": "^2.1.0",
+    "node-forge": "^1.3.1",
+    "openai": "^4.8.0",
+    "os": "^0.1.2",
+    "query-string": "^6.12.1",
+    "remark-gfm": "^4.0.0",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5",
+    "unist-util-remove-position": "^5.0.0",
+    "xmldom": "^0.6.0"
+  }
+}
