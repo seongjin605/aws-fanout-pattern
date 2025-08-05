@@ -11,7 +11,7 @@ const snsClient = new SNSClient({
   }
 });
 
-async function sendSnsMessage({ topicArn = '', message = '', color = '', count = null }) {
+async function sendSnsMessage({ topicArn = '', message = '', color = '', quantity = null }) {
   try {
     const messageAttributes = {
       color: {
@@ -20,10 +20,10 @@ async function sendSnsMessage({ topicArn = '', message = '', color = '', count =
       }
     };
 
-    if (count) {
-      messageAttributes.count = {
+    if (quantity) {
+      messageAttributes.quantity = {
         DataType: 'Number',
-        StringValue: count.toString()
+        StringValue: quantity.toString()
       };
     }
 
@@ -35,7 +35,7 @@ async function sendSnsMessage({ topicArn = '', message = '', color = '', count =
 
     const response = await snsClient.send(command);
     console.log(
-      `SNS 메시지 전송 성공 [색상: ${color}${count !== null ? `, 개수: ${count}` : ''}]:`,
+      `SNS 메시지 전송 성공 [색상: ${color}${quantity !== null ? `, 수치: ${quantity}` : ''}]:`,
       response.MessageId
     );
     return response;
@@ -54,7 +54,7 @@ const sqsClient = new SQSClient({
   }
 });
 
-async function receiveSqsMessages(queueUrl = '', deleteMessages = true) {
+async function receiveSqsMessages({ queueUrl = '', deleteMessages = true }) {
   try {
     const queueName = queueUrl.split('/').pop();
     console.log(`\n=== 큐 [${queueName}]에서 메시지 수신 중... ===`);
@@ -69,7 +69,7 @@ async function receiveSqsMessages(queueUrl = '', deleteMessages = true) {
     const response = await sqsClient.send(command);
 
     if (response.Messages && response.Messages.length > 0) {
-      console.log(`큐 [${queueName}]에서 ${response.Messages.length}개의 메시지 수신됨:`);
+      console.log(`🧪 큐 [${queueName}]에서 ${response.Messages.length}개의 메시지 수신됨:`);
 
       for (let i = 0; i < response.Messages.length; i++) {
         const message = response.Messages[i];
@@ -130,9 +130,8 @@ const QUEUE_URLS = {
 
 const TOPIC_ARN = 'arn:aws:sns:ap-northeast-2:000000000000:sample-topic';
 
-// 큐 정리 함수
 async function clearAllQueues() {
-  console.log('🧹 모든 큐 정리 중...');
+  console.log('모든 큐 정리 중...');
 
   for (const [queueName, queueUrl] of Object.entries(QUEUE_URLS)) {
     try {
@@ -158,36 +157,34 @@ async function clearAllQueues() {
       }
 
       if (totalDeleted > 0) {
-        console.log(`    → ${totalDeleted}개 메시지 삭제됨`);
+        console.log(`-> ${totalDeleted}개 메시지 삭제됨`);
       } else {
-        console.log(`    → 이미 비어있음`);
+        console.log(`-> 이미 비어있음`);
       }
     } catch (error) {
-      console.error(`    → ${queueName} 정리 실패:`, error.message);
+      console.error(`-> ${queueName} 정리 실패:`, error.message);
     }
   }
 
-  console.log('✅ 큐 정리 완료\n');
+  console.log('큐 정리 완료\n');
 }
 
 async function runMessageTests() {
-  console.log('🚀 SNS 메시지 필터링 테스트 시작\n');
+  console.log('SNS 메시지 필터링 테스트 시작\n');
 
   try {
-    // 먼저 모든 큐 정리
     await clearAllQueues();
 
     const testMessages = [
       { color: 'blue', message: 'Blue 메시지입니다!' },
       { color: 'red', message: 'Red 메시지입니다!' },
       { color: 'yellow', message: 'Yellow 메시지입니다!' },
-      { color: 'green', count: 50, message: 'Green 메시지 (50개) - 적은 수량' },
-      { color: 'green', count: 150, message: 'Green 메시지 (150개) - 많은 수량' },
-      { color: 'green', count: 100, message: 'Green 메시지 (정확히 100개)' },
-      { color: 'blue', count: 75, message: 'Blue 메시지 (75개)' },
-      { color: 'yellow', count: 200, message: 'Yellow 메시지 (200개)' }
+      { color: 'green', quantity: 50, message: 'Green 메시지 (수치: 50) - 적은 수량' },
+      { color: 'green', quantity: 150, message: 'Green 메시지 (수치: 150) - 많은 수량' },
+      { color: 'green', quantity: 100, message: 'Green 메시지 (수치: 100) - 정확히 수치 100으로 세팅' },
+      { color: 'blue', quantity: 75, message: 'Blue 메시지 (수치: 75)' },
+      { color: 'yellow', quantity: 200, message: 'Yellow 메시지 (수치: 200)' }
     ];
-
     console.log('테스트 메시지들 전송 중...\n');
 
     for (const testMsg of testMessages) {
@@ -195,43 +192,40 @@ async function runMessageTests() {
         topicArn: TOPIC_ARN,
         message: testMsg.message,
         color: testMsg.color,
-        count: testMsg.count
+        quantity: testMsg.quantity
       });
-      // 메시지 간 짧은 지연
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 200)); // 메시지 간 짧은 지연
     }
 
     console.log('\n메시지 전송 완료, 잠시 대기 후 큐에서 수신...\n');
 
-    // 메시지가 큐에 도달할 시간을 기다림
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 3000)); // 메시지가 큐에 도달할 시간을 기다림
 
     console.log('각 큐에서 메시지 수신 결과:\n');
 
-    // 각 큐에서 메시지 수신
     for (const [queueName, queueUrl] of Object.entries(QUEUE_URLS)) {
       console.log(`\n[${queueName}] 큐 확인:`);
       console.log('예상 수신 메시지:');
 
       switch (queueName) {
         case 'ColorQueue':
-          console.log('   → 모든 색상 메시지 (8개 예상)');
+          console.log('-> 모든 색상 메시지 (8개 예상)');
           break;
         case 'BlueYellowQueue':
-          console.log('   → blue, yellow 메시지만 (4개 예상)');
+          console.log('-> blue, yellow 메시지만 (4개 예상)');
           break;
         case 'RedQueue':
-          console.log('   → red 메시지만 (1개 예상)');
+          console.log('-> red 메시지만 (1개 예상)');
           break;
         case 'GreenHighQueue':
-          console.log('   → green이고 100개 이상 (2개 예상: 150개, 100개)');
+          console.log('-> green이고 100개 이상 (2개 예상: 수치 150, 수치 100)');
           break;
         case 'GreenLowQueue':
-          console.log('   → green이고 100개 미만 (1개 예상: 50개)');
+          console.log('-> green이고 100개 미만 (1개 예상: 수치 50)');
           break;
       }
 
-      await receiveSqsMessages(queueUrl, false); // 메시지 삭제하지 않음
+      await receiveSqsMessages({ queueUrl, deleteMessages: true }); // 메시지 삭제하지 않음
       console.log('-'.repeat(60));
     }
 
@@ -240,23 +234,22 @@ async function runMessageTests() {
     console.log('1. ColorQueue: 모든 색상 수신');
     console.log('2. BlueYellowQueue: blue, yellow만 수신');
     console.log('3. RedQueue: red만 수신');
-    console.log('4. GreenHighQueue: green이고 count >= 100');
-    console.log('5. GreenLowQueue: green이고 count < 100');
+    console.log('4. GreenHighQueue: green이고 quantity >= 100');
+    console.log('5. GreenLowQueue: green이고 quantity < 100');
   } catch (error) {
-    console.error('❌ 테스트 실행 중 오류:', error);
+    console.error('테스트 실행 중 오류:', error);
   }
 }
 
-// 개별 큐 확인 함수
 async function checkQueue(queueName, clearFirst = false) {
   if (!QUEUE_URLS[queueName]) {
-    console.error(`❌ 잘못된 큐 이름: ${queueName}`);
+    console.error(`잘못된 큐 이름: ${queueName}`);
     console.log('사용 가능한 큐:', Object.keys(QUEUE_URLS).join(', '));
     return;
   }
 
   if (clearFirst) {
-    console.log(`🧹 [${queueName}] 큐 정리 중...`);
+    console.log(`[${queueName}] 큐 정리 중...`);
     let totalDeleted = 0;
 
     while (true) {
@@ -277,14 +270,14 @@ async function checkQueue(queueName, clearFirst = false) {
       }
     }
 
-    console.log(`✅ ${totalDeleted}개 메시지 삭제됨\n`);
+    console.log(`${totalDeleted}개 메시지 삭제됨\n`);
   }
 
-  console.log(`🔍 [${queueName}] 큐 메시지 확인:`);
-  await receiveSqsMessages(QUEUE_URLS[queueName], false);
+  console.log(`[${queueName}] 큐 메시지 확인:`);
+  await receiveSqsMessages({ queueUrl: QUEUE_URLS[queueName], deleteMessages: false });
 }
 
-console.log('🎯 SNS 메시지 필터링 데모');
+console.log('SNS 메시지 필터링 데모');
 console.log('사용법:');
 console.log('  node fanout.js                    # 전체 테스트 실행 (큐 정리 후)');
 console.log('  node fanout.js [큐이름]           # 특정 큐 확인');

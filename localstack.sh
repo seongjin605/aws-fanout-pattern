@@ -59,17 +59,17 @@ echo "GreenHighQueue 생성 및 구독 중..."
 awslocal sqs create-queue --queue-name GreenHighQueue
 GREEN_HIGH_QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url http://sqs.ap-northeast-2.localhost.localstack.cloud:4566/000000000000/GreenHighQueue --attribute-names QueueArn | jq -r '.Attributes.QueueArn')
 GREEN_HIGH_SUBSCRIPTION_ARN=$(awslocal sns subscribe --topic-arn "$TOPIC_ARN" --protocol sqs --notification-endpoint "$GREEN_HIGH_QUEUE_ARN" --output text)
-# green이고 count가 100 이상인 메시지만 허용하는 필터 정책
-awslocal sns set-subscription-attributes --subscription-arn "$GREEN_HIGH_SUBSCRIPTION_ARN" --attribute-name FilterPolicy --attribute-value '{"color":["green"],"count":[{"numeric":[">=",100]}]}'
-echo "GreenHighQueue가 SNS 토픽에 구독되었습니다 (green이고 100개 이상일 때만 수신)"
+# green이고 quantity가 100 이상인 메시지만 허용하는 필터 정책
+awslocal sns set-subscription-attributes --subscription-arn "$GREEN_HIGH_SUBSCRIPTION_ARN" --attribute-name FilterPolicy --attribute-value '{"color":["green"],"quantity":[{"numeric":[">=",100]}]}'
+echo "GreenHighQueue가 SNS 토픽에 구독되었습니다 (green이고 수치가 100 이상일 때만 수신)"
 
 # 5. GreenLowQueue: green 메시지가 100 미만일 때만 수신
 echo "GreenLowQueue 생성 및 구독 중..."
 awslocal sqs create-queue --queue-name GreenLowQueue
 GREEN_LOW_QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url http://sqs.ap-northeast-2.localhost.localstack.cloud:4566/000000000000/GreenLowQueue --attribute-names QueueArn | jq -r '.Attributes.QueueArn')
 GREEN_LOW_SUBSCRIPTION_ARN=$(awslocal sns subscribe --topic-arn "$TOPIC_ARN" --protocol sqs --notification-endpoint "$GREEN_LOW_QUEUE_ARN" --output text)
-# green이고 count가 100 미만인 메시지만 허용하는 필터 정책
-awslocal sns set-subscription-attributes --subscription-arn "$GREEN_LOW_SUBSCRIPTION_ARN" --attribute-name FilterPolicy --attribute-value '{"color":["green"],"count":[{"numeric":["<",100]}]}'
-echo "GreenLowQueue가 SNS 토픽에 구독되었습니다 (green이고 100개 미만일 때만 수신)"
+# green이고 quantity가 100 미만인 메시지만 허용하는 필터 정책
+awslocal sns set-subscription-attributes --subscription-arn "$GREEN_LOW_SUBSCRIPTION_ARN" --attribute-name FilterPolicy --attribute-value '{"color":["green"],"quantity":[{"numeric":["<",100]}]}'
+echo "GreenLowQueue가 SNS 토픽에 구독되었습니다 (green이고 수치가 100 미만일 때만 수신)"
 
 localstack status services
