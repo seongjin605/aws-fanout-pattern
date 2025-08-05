@@ -25,19 +25,51 @@ echo "LocalStack 및 SNS topic 설정이 완료되었습니다."
 
 echo "SNS 토픽에 구독자로 추가하는 중 입니다..."
 
-# 첫 번째 SQS 큐 생성 및 구독
-awslocal sqs create-queue --queue-name sns-subscriber-queue
-QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url http://sqs.ap-northeast-2.localhost.localstack.cloud:4566/000000000000/sns-subscriber-queue --attribute-names QueueArn | jq -r '.Attributes.QueueArn')
 TOPIC_ARN="arn:aws:sns:ap-northeast-2:000000000000:sample-topic"
 
-awslocal sns subscribe --topic-arn "$TOPIC_ARN" --protocol sqs --notification-endpoint "$QUEUE_ARN"
-echo "첫 번째 SNS 수신자 큐가 SNS 토픽에 구독자로 추가되었습니다."
+# 1. ColorQueue: 모든 색상 메시지 수신
+echo "ColorQueue 생성 및 구독 중..."
+awslocal sqs create-queue --queue-name ColorQueue
+COLOR_QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url http://sqs.ap-northeast-2.localhost.localstack.cloud:4566/000000000000/ColorQueue --attribute-names QueueArn | jq -r '.Attributes.QueueArn')
+COLOR_SUBSCRIPTION_ARN=$(awslocal sns subscribe --topic-arn "$TOPIC_ARN" --protocol sqs --notification-endpoint "$COLOR_QUEUE_ARN" --output text)
+# 모든 색상을 허용하는 필터 정책
+awslocal sns set-subscription-attributes --subscription-arn "$COLOR_SUBSCRIPTION_ARN" --attribute-name FilterPolicy --attribute-value '{"color":["blue","red","yellow","green"]}'
+echo "ColorQueue가 SNS 토픽에 구독되었습니다 (모든 색상 수신)"
 
-# 두 번째 SQS 큐 생성 및 구독
-awslocal sqs create-queue --queue-name sns-subscriber-queue-2
-QUEUE_ARN_2=$(awslocal sqs get-queue-attributes --queue-url http://sqs.ap-northeast-2.localhost.localstack.cloud:4566/000000000000/sns-subscriber-queue-2 --attribute-names QueueArn | jq -r '.Attributes.QueueArn')
+# 2. BlueYellowQueue: blue와 yellow만 수신
+echo "BlueYellowQueue 생성 및 구독 중..."
+awslocal sqs create-queue --queue-name BlueYellowQueue
+BLUE_YELLOW_QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url http://sqs.ap-northeast-2.localhost.localstack.cloud:4566/000000000000/BlueYellowQueue --attribute-names QueueArn | jq -r '.Attributes.QueueArn')
+BLUE_YELLOW_SUBSCRIPTION_ARN=$(awslocal sns subscribe --topic-arn "$TOPIC_ARN" --protocol sqs --notification-endpoint "$BLUE_YELLOW_QUEUE_ARN" --output text)
+# blue와 yellow만 허용하는 필터 정책
+awslocal sns set-subscription-attributes --subscription-arn "$BLUE_YELLOW_SUBSCRIPTION_ARN" --attribute-name FilterPolicy --attribute-value '{"color":["blue","yellow"]}'
+echo "BlueYellowQueue가 SNS 토픽에 구독되었습니다 (blue, yellow만 수신)"
 
-awslocal sns subscribe --topic-arn "$TOPIC_ARN" --protocol sqs --notification-endpoint "$QUEUE_ARN_2"
-echo "두 번째 SNS 수신자 큐가 SNS 토픽에 구독자로 추가되었습니다."
+# 3. RedQueue: red만 수신
+echo "RedQueue 생성 및 구독 중..."
+awslocal sqs create-queue --queue-name RedQueue
+RED_QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url http://sqs.ap-northeast-2.localhost.localstack.cloud:4566/000000000000/RedQueue --attribute-names QueueArn | jq -r '.Attributes.QueueArn')
+RED_SUBSCRIPTION_ARN=$(awslocal sns subscribe --topic-arn "$TOPIC_ARN" --protocol sqs --notification-endpoint "$RED_QUEUE_ARN" --output text)
+# red만 허용하는 필터 정책
+awslocal sns set-subscription-attributes --subscription-arn "$RED_SUBSCRIPTION_ARN" --attribute-name FilterPolicy --attribute-value '{"color":["red"]}'
+echo "RedQueue가 SNS 토픽에 구독되었습니다 (red만 수신)"
+
+# 4. GreenHighQueue: green 메시지가 100 이상일 때만 수신
+echo "GreenHighQueue 생성 및 구독 중..."
+awslocal sqs create-queue --queue-name GreenHighQueue
+GREEN_HIGH_QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url http://sqs.ap-northeast-2.localhost.localstack.cloud:4566/000000000000/GreenHighQueue --attribute-names QueueArn | jq -r '.Attributes.QueueArn')
+GREEN_HIGH_SUBSCRIPTION_ARN=$(awslocal sns subscribe --topic-arn "$TOPIC_ARN" --protocol sqs --notification-endpoint "$GREEN_HIGH_QUEUE_ARN" --output text)
+# green이고 count가 100 이상인 메시지만 허용하는 필터 정책
+awslocal sns set-subscription-attributes --subscription-arn "$GREEN_HIGH_SUBSCRIPTION_ARN" --attribute-name FilterPolicy --attribute-value '{"color":["green"],"count":[{"numeric":[">=",100]}]}'
+echo "GreenHighQueue가 SNS 토픽에 구독되었습니다 (green이고 100개 이상일 때만 수신)"
+
+# 5. GreenLowQueue: green 메시지가 100 미만일 때만 수신
+echo "GreenLowQueue 생성 및 구독 중..."
+awslocal sqs create-queue --queue-name GreenLowQueue
+GREEN_LOW_QUEUE_ARN=$(awslocal sqs get-queue-attributes --queue-url http://sqs.ap-northeast-2.localhost.localstack.cloud:4566/000000000000/GreenLowQueue --attribute-names QueueArn | jq -r '.Attributes.QueueArn')
+GREEN_LOW_SUBSCRIPTION_ARN=$(awslocal sns subscribe --topic-arn "$TOPIC_ARN" --protocol sqs --notification-endpoint "$GREEN_LOW_QUEUE_ARN" --output text)
+# green이고 count가 100 미만인 메시지만 허용하는 필터 정책
+awslocal sns set-subscription-attributes --subscription-arn "$GREEN_LOW_SUBSCRIPTION_ARN" --attribute-name FilterPolicy --attribute-value '{"color":["green"],"count":[{"numeric":["<",100]}]}'
+echo "GreenLowQueue가 SNS 토픽에 구독되었습니다 (green이고 100개 미만일 때만 수신)"
 
 localstack status services
