@@ -19,7 +19,7 @@ Fanout 패턴은 하나의 메시지 발행자(Publisher)가 여러 구독자(Su
 ### 사전 요구사항
 
 - Node.js (최신 LTS 버전 권장)
-- Docker (LocalStack 실행에 필요)
+- Docker (LocalStack 실행에 필요) - 도커 데스크탑은 라이센스 이슈로 [Colima](https://github.com/abiosoft/colima) 사용 추천
 - LocalStack (설치 방법은 [공식 LocalStack GitHub 저장소](https://github.com/localstack/localstack)를 참고해주세요)
 
 ### 설치
